@@ -2,7 +2,7 @@ import { useApplicationStore } from '../model/use-application-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 
 export const ApplicationList = () => {
-  const { applications } = useApplicationStore();
+  const applications = useApplicationStore().applications;
 
   if (applications.length === 0) {
     return (
