@@ -1,5 +1,3 @@
-import type { InputHTMLAttributes } from 'react';
-
 export interface ApplicationFormData {
   fullName: string;
   email: string;

@@ -21,7 +21,7 @@ const schema = yup.object({
 });
 
 export const ApplicationForm = () => {
-  const { addApplication } = useApplicationStore();
+  const { addApplication, isLoading, error, clearError } = useApplicationStore();
   const { loanAmount, term, interestRate, monthlyPayment, totalAmount } = useLoanCalculator();
 
   const {
@@ -29,14 +29,13 @@ export const ApplicationForm = () => {
     handleSubmit,
     formState: { errors },
     setValue,
+    trigger,
     watch,
   } = useForm<ApplicationFormData>({
     resolver: yupResolver(schema),
   });
 
   const phoneValue = watch('phone');
-  const isInitialRender = useRef(true);
-  const previousPhoneValue = useRef<string>();
 
   const {
     ref: imaskRef,
@@ -51,40 +50,32 @@ export const ApplicationForm = () => {
     if (imaskValue && imaskValue !== phoneValue) {
       setValue('phone', imaskValue, { shouldValidate: true });
     }
-    console.log('rep');
-  }, [imaskValue, setValue]); // Убрали phoneValue из зависимостей
+  }, [imaskValue, setValue, phoneValue]);
 
-  // Синхронизация из react-hook-form в IMask (только при внешних изменениях)
+  // Инициализация значения телефона при монтировании
   useEffect(() => {
-    if (isInitialRender.current) {
-      isInitialRender.current = false;
-      if (phoneValue) {
-        setImaskValue(phoneValue);
-      }
-      return;
-    }
-
-    // Обновляем IMask только если значение изменилось не через сам IMask
-    if (phoneValue && phoneValue !== imaskValue && phoneValue !== previousPhoneValue.current) {
+    if (phoneValue) {
       setImaskValue(phoneValue);
     }
+  }, []);
 
-    previousPhoneValue.current = phoneValue;
-  }, [phoneValue, imaskValue, setImaskValue]);
+  const onSubmit = async (data: ApplicationFormData) => {
+    clearError();
 
-  const onSubmit = (data: ApplicationFormData) => {
-    const cleanedPhone = data.phone.replace(/\D/g, '');
-
-    addApplication({
-      ...data,
-      phone: cleanedPhone,
-      loanAmount,
-      term,
-      interestRate,
-      monthlyPayment: monthlyPayment || 0,
-      totalAmount: totalAmount || 0,
-    });
-    alert('Заявка отправлена!');
+    try {
+      addApplication({
+        ...data,
+        phone: data.phone.replace(/\D/g, ''),
+        loanAmount,
+        term,
+        interestRate,
+        monthlyPayment: monthlyPayment || 0,
+        totalAmount: totalAmount || 0,
+      });
+      alert('Заявка отправлена!');
+    } catch (err) {
+      console.error('Failed to submit application:', err);
+    }
   };
 
   return (
@@ -93,16 +84,26 @@ export const ApplicationForm = () => {
         <CardTitle>Оформление заявки</CardTitle>
       </CardHeader>
       <CardContent>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fullName">ФИО</Label>
-            <Input id="fullName" {...register('fullName')} />
+            <Input
+              id="fullName"
+              {...register('fullName', { onChange: () => trigger('fullName') })}
+              aria-invalid={errors.fullName ? 'true' : 'false'}
+            />
             {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register('email')} />
+            <Input
+              id="email"
+              type="email"
+              {...register('email', { onChange: () => trigger('email') })}
+              //aria-invalid={errors.email ? 'true' : 'false'}
+            />
             {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
           </div>
 
@@ -110,18 +111,26 @@ export const ApplicationForm = () => {
             <Label htmlFor="phone">Телефон</Label>
             <Input
               id="phone"
-              ref={imaskRef}
-              value={imaskValue}
-              onChange={(e) => {
-                // IMask автоматически обработает изменение через mask
-                setImaskValue(e.target.value);
+              {...register('phone', {
+                onChange: (e) => {
+                  setImaskValue(e.target.value);
+                },
+                onBlur: () => trigger('phone'),
+              })}
+              ref={(element) => {
+                // Правильное связывание IMask ref
+                if (element) {
+                  imaskRef.current = element;
+                }
               }}
+              value={imaskValue}
+              //aria-invalid={errors.phone ? 'true' : 'false'}
             />
             {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
           </div>
 
-          <Button type="submit" className="w-full">
-            Отправить заявку
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Отправка...' : 'Отправить заявку'}
           </Button>
         </form>
       </CardContent>

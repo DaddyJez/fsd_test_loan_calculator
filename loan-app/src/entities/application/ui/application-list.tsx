@@ -1,8 +1,46 @@
+import { useEffect } from 'react';
 import { useApplicationStore } from '../model/use-application-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Button } from '@/shared/ui/button';
 
 export const ApplicationList = () => {
-  const applications = useApplicationStore().applications;
+  const { applications, isLoading, error, loadApplications, removeApplication } =
+    useApplicationStore();
+
+  useEffect(() => {
+    loadApplications().then(() => {
+      console.log('loaded');
+    });
+  }, []);
+
+  if (isLoading && applications.length === 0) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Заявки</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Загрузка...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Заявки</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500">{error}</p>
+          <Button onClick={loadApplications} className="mt-2">
+            Попробовать снова
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (applications.length === 0) {
     return (
@@ -40,6 +78,15 @@ export const ApplicationList = () => {
                 <div>Ставка: {app.interestRate}%</div>
                 <div>Платеж: {app.monthlyPayment.toLocaleString()} ₽/мес</div>
               </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="mt-2"
+                onClick={() => removeApplication(app.id)}
+                disabled={isLoading}
+              >
+                Удалить
+              </Button>
             </div>
           ))}
         </div>

@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useLoanCalculator } from '../model/use-loan-calculator';
-import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
@@ -16,7 +15,6 @@ export const LoanCalculator = () => {
     setTerm,
     setInterestRate,
     calculatePayment,
-    reset,
   } = useLoanCalculator();
 
   useEffect(() => {
@@ -66,7 +64,7 @@ export const LoanCalculator = () => {
           />
         </div>
 
-        {monthlyPayment && totalAmount && (
+        {monthlyPayment && totalAmount ? (
           <div className="space-y-2 p-4 bg-muted rounded-lg">
             <div className="flex justify-between">
               <span>Ежемесячный платеж:</span>
@@ -81,16 +79,9 @@ export const LoanCalculator = () => {
               <span className="font-bold">{(totalAmount - loanAmount).toLocaleString()} ₽</span>
             </div>
           </div>
+        ) : (
+          <></>
         )}
-
-        <div className="flex space-x-2">
-          <Button onClick={calculatePayment} className="flex-1">
-            Рассчитать
-          </Button>
-          <Button variant="outline" onClick={reset}>
-            Сбросить
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
+import { calculateLoan } from '@/shared/lib/calculator/calculator';
 import type { CalculatorState } from '@/shared/types';
+
 interface LoanCalculatorStore extends CalculatorState {
   setLoanAmount: (amount: number) => void;
   setTerm: (term: number) => void;
@@ -23,16 +25,12 @@ export const useLoanCalculator = create<LoanCalculatorStore>((set, get) => ({
     const state = get();
     const { loanAmount, term, interestRate } = state;
 
-    // Формула аннуитетного платежа
-    const monthlyRate = interestRate / 100 / 12;
-    const payment =
-      (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, term)) /
-      (Math.pow(1 + monthlyRate, term) - 1);
-    const total = payment * term;
+    // Используем функцию расчета из lib
+    const { monthlyPayment, totalAmount } = calculateLoan(loanAmount, term, interestRate);
 
     set({
-      monthlyPayment: Math.round(payment),
-      totalAmount: Math.round(total),
+      monthlyPayment,
+      totalAmount,
     });
   },
 
